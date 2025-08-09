@@ -1,0 +1,18 @@
+# Desi Neighborhood Opportunity Index (DNOI) — Richmond, VA
+
+An interactive R Shiny app to map and score neighborhoods based on accessibility to South Asian/Muslim community resources — including halal restaurants, desi shopping, cultural events, transit access, and affordability.
+
+## Structure
+- `app/` — Shiny application code
+- `etl/` — Data extraction and cleaning scripts
+- `data/raw/` — Raw datasets (excluded from Git)
+- `data/processed/` — Clean datasets (excluded from Git)
+- `docs/` — Documentation and project notes
+
+## How to run
+```r
+# Install dependencies
+install.packages(c("shiny", "leaflet", "dplyr", "sf", "osmdata"))
+
+# Launch app
+shiny::runApp("app")
