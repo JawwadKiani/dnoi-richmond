@@ -1,4 +1,8 @@
-.Rproj.user
+# Ignore raw and processed data folders to avoid large or sensitive files in repo
+/data/raw/
+/data/processed/
+
+# Optionally ignore other common files
 .Rhistory
 .RData
-.Ruserdata
+.Rproj.user/
