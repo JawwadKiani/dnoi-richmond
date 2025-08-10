@@ -2,226 +2,156 @@ library(shiny)
 library(leaflet)
 library(sf)
 library(dplyr)
-library(RColorBrewer)
 library(here)
+library(htmltools)
+library(shinyWidgets) # for enhanced search input
 
-# Helper for NA/empty string fallback
+# Helper: safe string fallback
 `%||%` <- function(a, b) {
   if (length(a) == 0) return(b)
   ifelse(!is.na(a) & a != "", a, b)
 }
 
-# Load DNOI data
+# Load Richmond polygons (greater Richmond area)
 dnoi_sf <- st_read(here("data", "processed", "greater_richmond_tracts.geojson"), quiet = TRUE) %>%
   st_transform(4326)
 
-# Load businesses
-businesses_all <- st_read(here("data", "raw", "export.geojson"), quiet = TRUE)
+# Load business data
+businesses_all <- st_read(here("data", "raw", "export.geojson"), quiet = TRUE) %>%
+  st_transform(4326)
 
-# Filter only point geometries
-businesses_points <- businesses_all[st_geometry_type(businesses_all) %in% c("POINT", "MULTIPOINT"), ]
+# Keep only businesses inside Richmond polygons
+businesses_richmond <- st_join(businesses_all, dnoi_sf, join = st_within) %>%
+  filter(!is.na(GEOID))
 
-# Valid and transform CRS
-businesses_sf <- st_transform(st_make_valid(businesses_points), 4326)
-
-# Filter businesses on keywords
-businesses_filtered <- businesses_sf %>%
+# Filter businesses for halal/desi keywords
+businesses_filtered <- businesses_richmond %>%
   filter(
     grepl("indian|pakistani|halal|desi", tolower(cuisine %||% ""), ignore.case = TRUE) |
       grepl("indian|pakistani|halal|desi", tolower(name %||% ""), ignore.case = TRUE) |
       grepl("butcher|halal", tolower(shop %||% ""), ignore.case = TRUE)
-  )
+  ) %>%
+  distinct(id, .keep_all = TRUE)  # Remove duplicates by unique id
 
-# Count businesses per tract via spatial join
-businesses_in_tracts <- st_join(businesses_filtered, dnoi_sf, join = st_within)
+# Extract cuisines and types for filters
+unique_cuisines <- sort(unique(tolower(businesses_filtered$cuisine[!is.na(businesses_filtered$cuisine)])))
+unique_types <- sort(unique(tolower(coalesce(businesses_filtered$amenity, businesses_filtered$shop, "Unknown"))))
 
-business_counts <- businesses_in_tracts %>%
-  st_drop_geometry() %>%
-  group_by(GEOID) %>%
-  summarise(business_count = n(), .groups = "drop")
-
-# Add business count to DNOI data, fill NAs with 0
-dnoi_sf <- dnoi_sf %>%
-  left_join(business_counts, by = "GEOID") %>%
-  mutate(business_count = ifelse(is.na(business_count), 0, business_count))
-
-# Numeric column for filtering and color
-dnoi_numeric_column <- "ALAND"
-
-# Color palette based on numeric column
-pal <- colorNumeric(
-  palette = "YlOrRd",
-  domain = dnoi_sf[[dnoi_numeric_column]],
-  na.color = "transparent"
-)
-
+# UI
 ui <- fluidPage(
-  titlePanel("Desi Neighborhood Opportunity Index (DNOI) — Richmond, VA"),
+  titlePanel("Halal/Desi Businesses in Greater Richmond Area"),
+  
   sidebarLayout(
     sidebarPanel(
-      sliderInput(
-        "dnoiFilter",
-        paste("Minimum", dnoi_numeric_column, ":"),
-        min = min(dnoi_sf[[dnoi_numeric_column]], na.rm = TRUE),
-        max = max(dnoi_sf[[dnoi_numeric_column]], na.rm = TRUE),
-        value = min(dnoi_sf[[dnoi_numeric_column]], na.rm = TRUE),
-        step = (max(dnoi_sf[[dnoi_numeric_column]], na.rm = TRUE) - min(dnoi_sf[[dnoi_numeric_column]], na.rm = TRUE)) / 1000
+      pickerInput(
+        inputId = "cuisine_filter",
+        label = "Filter by Cuisine:",
+        choices = unique_cuisines,
+        selected = unique_cuisines,
+        options = list(`actions-box` = TRUE),
+        multiple = TRUE
       ),
+      pickerInput(
+        inputId = "type_filter",
+        label = "Filter by Business Type:",
+        choices = unique_types,
+        selected = unique_types,
+        options = list(`actions-box` = TRUE),
+        multiple = TRUE
+      ),
+      checkboxInput("show_borders", "Show Richmond Area Borders", value = TRUE),
       br(),
-      helpText("Use the slider to filter census tracts by minimum value."),
-      hr(),
-      h4("Selected Tract Details"),
-      uiOutput("selectedTractName"),
-      plotOutput("tractStatsPlot")
+      helpText("Click markers for business details. Use filters to refine visible businesses."),
+      br(),
+      h5(textOutput("business_count"))
     ),
+    
     mainPanel(
-      leafletOutput("dnoiMap", height = 600)
+      leafletOutput("map", height = "700px")
     )
   )
 )
 
+# Server
 server <- function(input, output, session) {
-  selected_tract <- reactiveVal(NULL)
   
-  filtered_data <- reactive({
-    req(input$dnoiFilter)
-    dnoi_sf %>% filter(!is.na(.data[[dnoi_numeric_column]]) & .data[[dnoi_numeric_column]] >= input$dnoiFilter)
-  })
-  
-  output$dnoiMap <- renderLeaflet({
-    fd <- filtered_data()
+  # Reactive filtered businesses based on cuisine and type selections
+  filtered_businesses <- reactive({
+    req(input$cuisine_filter, input$type_filter)
     
-    # Extract numeric vector ahead of time
-    numeric_vals <- fd[[dnoi_numeric_column]]
-    
-    leaflet(fd) %>%
-      addTiles() %>%
-      addPolygons(
-        layerId = ~GEOID,
-        fillColor = pal(numeric_vals), # Use palette with numeric vector, NOT inside formula
-        weight = 1,
-        opacity = 1,
-        color = "white",
-        dashArray = "3",
-        fillOpacity = 0.7,
-        highlightOptions = highlightOptions(
-          weight = 3,
-          color = "#666",
-          dashArray = "",
-          fillOpacity = 0.9,
-          bringToFront = TRUE
-        ),
-        label = ~paste0(
-          "<strong>", NAME, "</strong><br/>",
-          "Business Count: ", business_count, "<br/>",
-          dnoi_numeric_column, ": ", formatC(fd[[dnoi_numeric_column]], format = "f", digits = 0, big.mark = ",")
-        ) %>% lapply(htmltools::HTML),
-        labelOptions = labelOptions(
-          style = list("font-weight" = "normal", padding = "3px 8px"),
-          textsize = "13px",
-          direction = "auto"
-        )
-      ) %>%
-      addCircleMarkers(
-        data = businesses_filtered,
-        lng = ~st_coordinates(businesses_filtered)[,1],
-        lat = ~st_coordinates(businesses_filtered)[,2],
-        radius = 5,
-        color = "green",
-        stroke = FALSE,
-        fillOpacity = 0.7,
-        label = ~paste0(
-          "<strong>", name %||% "Unnamed", "</strong><br/>",
-          "Type: ", amenity %||% shop %||% "Unknown", "<br/>",
-          "Cuisine: ", cuisine %||% "N/A"
-        ) %>% lapply(htmltools::HTML)
-      ) %>%
-      addLegend(
-        pal = pal,
-        values = numeric_vals,
-        opacity = 0.7,
-        title = dnoi_numeric_column,
-        position = "bottomright"
+    businesses_filtered %>%
+      filter(
+        tolower(cuisine) %in% input$cuisine_filter,
+        tolower(coalesce(amenity, shop, "Unknown")) %in% input$type_filter
       )
   })
   
-  observeEvent(input$dnoiMap_shape_click, {
-    click <- input$dnoiMap_shape_click
-    if (is.null(click$id)) return()
-    
-    selected_tract(click$id)
-    
-    tract_poly <- dnoi_sf %>% filter(GEOID == click$id)
-    tract_poly <- st_make_valid(tract_poly)
-    
-    if (!any(st_geometry_type(tract_poly) %in% c("POLYGON", "MULTIPOLYGON"))) {
-      showNotification("Selected tract does not have valid polygon geometry.", type = "error")
-      return()
-    }
-    
-    if (!any(st_geometry_type(businesses_filtered) %in% c("POINT", "MULTIPOINT"))) {
-      showNotification("Business data does not contain valid point geometry.", type = "error")
-      return()
-    }
-    
-    businesses_in_tract <- st_join(businesses_filtered, tract_poly, join = st_within) %>%
-      filter(!is.na(GEOID))
-    
-    if (nrow(businesses_in_tract) == 0) {
-      popup_content <- "<b>No halal/desi businesses found in this tract.</b>"
+  # Display count of filtered businesses
+  output$business_count <- renderText({
+    paste("Total Halal/Desi Businesses Found:", nrow(filtered_businesses()))
+  })
+  
+  # Render Leaflet map
+  output$map <- renderLeaflet({
+    leaflet() %>%
+      addProviderTiles(providers$CartoDB.Positron) %>%
+      {
+        if (input$show_borders) {
+          addPolygons(., data = dnoi_sf,
+                      fillColor = "transparent",
+                      color = "#0073b7",
+                      weight = 2,
+                      opacity = 0.6,
+                      dashArray = "6 4",
+                      group = "Richmond Area")
+        } else .
+      } %>%
+      addMarkers(data = filtered_businesses(),
+                 lng = ~st_coordinates(geometry)[,1],
+                 lat = ~st_coordinates(geometry)[,2],
+                 clusterOptions = markerClusterOptions(),
+                 label = ~htmlEscape(name %||% "Unnamed"),
+                 popup = ~paste0(
+                   "<b>", htmlEscape(name %||% "Unnamed"), "</b><br/>",
+                   "Cuisine: ", htmlEscape(cuisine %||% "N/A"), "<br/>",
+                   "Type: ", htmlEscape(amenity %||% shop %||% "Unknown")
+                 ))
+  })
+  
+  # Update markers when filters or toggle change
+  observe({
+    leafletProxy("map", data = filtered_businesses()) %>%
+      clearMarkers() %>%
+      addMarkers(lng = ~st_coordinates(geometry)[,1],
+                 lat = ~st_coordinates(geometry)[,2],
+                 clusterOptions = markerClusterOptions(),
+                 label = ~htmlEscape(name %||% "Unnamed"),
+                 popup = ~paste0(
+                   "<b>", htmlEscape(name %||% "Unnamed"), "</b><br/>",
+                   "Cuisine: ", htmlEscape(cuisine %||% "N/A"), "<br/>",
+                   "Type: ", htmlEscape(amenity %||% shop %||% "Unknown")
+                 ))
+  })
+  
+  # Show/hide Richmond polygon borders on toggle
+  observe({
+    proxy <- leafletProxy("map")
+    if (input$show_borders) {
+      proxy %>%
+        clearGroup("Richmond Area") %>%
+        addPolygons(data = dnoi_sf,
+                    fillColor = "transparent",
+                    color = "#0073b7",
+                    weight = 2,
+                    opacity = 0.6,
+                    dashArray = "6 4",
+                    group = "Richmond Area")
     } else {
-      biz_list <- paste0(
-        "<ul>",
-        paste0(
-          "<li><b>", 
-          businesses_in_tract$name %||% "Unnamed", 
-          "</b> (", 
-          businesses_in_tract$amenity %||% businesses_in_tract$shop %||% "Unknown", 
-          ")</li>",
-          collapse = ""
-        ),
-        "</ul>"
-      )
-      popup_content <- paste0("<b>Halal/Desi Businesses:</b>", biz_list)
+      proxy %>% clearGroup("Richmond Area")
     }
-    
-    leafletProxy("dnoiMap") %>%
-      clearPopups() %>%
-      addPopups(
-        lng = click$lng, lat = click$lat,
-        popup = popup_content,
-        layerId = "business_popup"
-      )
   })
   
-  output$selectedTractName <- renderUI({
-    req(selected_tract())
-    tract <- dnoi_sf %>% filter(GEOID == selected_tract())
-    if (nrow(tract) == 0) return(NULL)
-    HTML(paste0("<strong>", tract$NAME[1], "</strong>"))
-  })
-  
-  output$tractStatsPlot <- renderPlot({
-    req(selected_tract())
-    tract <- dnoi_sf %>% filter(GEOID == selected_tract())
-    if (nrow(tract) == 0) return(NULL)
-    
-    values <- c(
-      `Businesses` = tract$business_count,
-      `Population` = NA,
-      `Median Income` = NA
-    )
-    
-    barplot(
-      values,
-      col = c("#F8766D", "#00BFC4", "#7CAE00"),
-      main = paste("Statistics for", tract$NAME),
-      ylab = "Count / Value",
-      las = 2,
-      cex.names = 0.8,
-      ylim = c(0, max(values, na.rm = TRUE) * 1.2)
-    )
-  })
 }
 
+# Run app
 shinyApp(ui, server)
