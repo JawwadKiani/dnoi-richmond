@@ -1,18 +1,83 @@
+---
+title: "Desi Neighborhood Opportunity Index (DNOI) — Richmond, VA"
+output: github_document
+---
+
 # Desi Neighborhood Opportunity Index (DNOI) — Richmond, VA
 
 An interactive R Shiny app to map and score neighborhoods based on accessibility to South Asian/Muslim community resources — including halal restaurants, desi shopping, cultural events, transit access, and affordability.
 
-## Structure
-- `app/` — Shiny application code
-- `etl/` — Data extraction and cleaning scripts
-- `data/raw/` — Raw datasets (excluded from Git)
-- `data/processed/` — Clean datasets (excluded from Git)
-- `docs/` — Documentation and project notes
+---
 
-## How to run
+## Project Structure
+
+- `app/` — Shiny application code  
+- `etl/` — Data extraction and cleaning scripts  
+- `data/raw/` — Raw datasets (excluded from Git for privacy and size)  
+- `data/processed/` — Cleaned datasets (excluded from Git)  
+- `docs/` — Documentation and project notes  
+
+---
+
+## Features
+
+- Interactive map showing halal/desi businesses in the Greater Richmond Area  
+- Neighborhood scoring (DNOI) based on:  
+  - Transit accessibility (bus stops)  
+  - Affordability (median rent and income)  
+  - Business competition (density of similar businesses)  
+- Filtering by cuisine and business type  
+- Toggle for showing neighborhood boundaries and DNOI heatmap  
+- Marker clustering for better visualization  
+
+---
+
+## Getting Started
+
+### Prerequisites
+
+Make sure you have R (version 4.0 or above) and RStudio installed.
+
+### Required R Packages
+
 ```r
-# Install dependencies
-install.packages(c("shiny", "leaflet", "dplyr", "sf", "osmdata"))
+install.packages(c(
+  "shiny", "leaflet", "dplyr", "sf", "osmdata", 
+  "tidycensus", "shinyWidgets", "here", "htmltools"
+))
 
-# Launch app
+```
+
+--- 
+### Obtain Your Census API Key
+To fetch US Census data dynamically, you must obtain your own Census API key:
+
+Visit https://api.census.gov/data/key_signup.html
+
+Register and get your API key via email
+
+Activate your key by clicking the activation link in the email
+
+Once you have your key, set it in R as follows:
+
+```r
+library(tidycensus)
+census_api_key("YOUR_CENSUS_API_KEY_HERE", install = TRUE)
+```
+
+This will save the key for future sessions.
+
+### Running the App
+From your R console or RStudio, run:
+```r
 shiny::runApp("app")
+```
+Make sure you are in the root directory of the project, or provide the correct path to the app folder.
+
+### Notes
+Raw and processed data are not included in this repository due to size and privacy considerations. You will need to source or generate these yourself or request access.
+
+The app fetches some data dynamically from OpenStreetMap and the US Census API. Make sure your internet connection is active.
+
+The DNOI scoring weights can be adjusted in the app code to fine-tune neighborhood opportunity evaluations.
+
