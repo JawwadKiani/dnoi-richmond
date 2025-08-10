@@ -9,7 +9,7 @@ library(osmdata)
 library(tidycensus)
 
 # Set your Census API key here (get from https://api.census.gov/data/key_signup.html)
-census_api_key("***REMOVED***", install = FALSE, overwrite = TRUE)
+census_api_key("your_api_key", install = FALSE, overwrite = TRUE)
 
 # Helper: safe string fallback
 `%||%` <- function(a, b) {
