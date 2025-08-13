@@ -1,18 +1,14 @@
 # Desi Neighborhood Opportunity Index (DNOI) — Richmond, VA
-
 An interactive R Shiny app that maps and scores neighborhoods in Richmond based on accessibility to South Asian/Muslim community resources, including halal restaurants, desi shopping, cultural events, transit access, and affordability.
 
-## 📁 Dataset
-
-Data sources include:
+## 📁Dataset
 
 - **Halal/Desi Businesses**: Locations of restaurants, grocery stores, and cultural shops  
 - **Transit Access**: Bus stops and public transit routes  
 - **Affordability**: Median rent and household income by neighborhood  
-- **Processed & Raw Data**: Stored in `data/processed/` and `data/raw/` (excluded from Git due to privacy and size)  
+- **Processed & Raw Data**: Stored in `data/processed/` and `data/raw/` (excluded from Git due to privacy and size) 
 
-## 🗺️ Features
-
+## 🗺️Features
 - Interactive map displaying halal/desi businesses  
 - Neighborhood scoring (DNOI) based on:  
   - Transit accessibility  
@@ -30,42 +26,44 @@ Data sources include:
 - **shinyWidgets, here, htmltools** — UI enhancements & project management  
 
 ## 🚀 Getting Started
-
-### 1️⃣ Prerequisites
+1️⃣ Prerequisites
 
 Install **R (≥ 4.0)** and **RStudio**.
 
-### 2️⃣ Install Required Packages
+2️⃣ Install Required Packages
 
-```bash
+```r
 install.packages(c(
   "shiny", "leaflet", "dplyr", "sf", "osmdata",
   "tidycensus", "shinyWidgets", "here", "htmltools"
 ))
 ```
 3️⃣ Obtain Census API Key
+
 Register for a key at Census API Key Signup. Activate the key via email, then set it in R:
 
-```bash
+```r
 library(tidycensus)
 census_api_key("YOUR_CENSUS_API_KEY_HERE", install = TRUE)
 ```
 4️⃣ Run the App
-From RStudio or the R console:
 
-```bash
+From RStudio or the R console:
+```r
 shiny::runApp("app")
 ```
+
 Make sure you are in the root directory of the project or provide the correct path to the app/ folder.
 
-⚙️ Notes
+## ⚙️ Notes
 Raw and processed datasets are not included due to privacy and size constraints.
 
 Some data is fetched dynamically from OpenStreetMap and US Census API.
 
 DNOI scoring weights can be adjusted in the code to fine-tune neighborhood evaluations.
 
-📌 Author
-Muhammad Jawwad Kiani
-Senior Data Analyst | Richmond DNOI Project
-📅 Date: August 2025
+## 📌 Author
+#### Muhammad Jawwad Kiani
+#### Senior Data Analyst | Richmond DNOI Project
+
+#### 📅 Date: August 2025 
