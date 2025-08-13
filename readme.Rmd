@@ -1,5 +1,6 @@
 ---
-"Desi (South Asian) Neighborhood Opportunity Index (DNOI) — Richmond, VA"
+title: "Desi (South Asian) Neighborhood Opportunity Index (DNOI) — Richmond, VA"
+output: github_document
 ---
 
 # Desi (South Asian) Neighborhood Opportunity Index (DNOI) — Richmond, VA
@@ -37,7 +38,7 @@ An interactive R Shiny app to map and score neighborhoods based on accessibility
 
 Make sure you have **R (version 4.0 or above)** and **RStudio** installed.
 
-### Required R Packages
+### Install Required R Packages
 
 ```r
 install.packages(c(
@@ -45,32 +46,36 @@ install.packages(c(
   "tidycensus", "shinyWidgets", "here", "htmltools"
 ))
 ```
-Obtain Your Census API Key
+
+### Obtain Your Census API Key
+
 To fetch US Census data dynamically, you must obtain your own Census API key:
 
-Visit Census API Key Signup
-
-Register and get your API key via email
-
-Activate your key by clicking the activation link in the email
+- Visit [Census API Key Signup](https://api.census.gov/data/key_signup.html)  
+- Register and get your API key via email  
+- Activate your key by clicking the activation link in the email  
 
 Set your key in R:
+
 ```r
 library(tidycensus)
 census_api_key("YOUR_CENSUS_API_KEY_HERE", install = TRUE)
 ```
 
-Running the App
+### Running the App
+
 From your R console or RStudio, run:
+
 ```r
 shiny::runApp("app")
 ```
 
-Make sure you are in the root directory of the project, or provide the correct path to the app folder.
+Make sure you are in the root directory of the project, or provide the correct path to the `app` folder.
 
-Notes
-Raw and processed data are not included in this repository due to size and privacy considerations. You will need to source or generate these yourself or request access.
+---
 
-The app fetches some data dynamically from OpenStreetMap and the US Census API. Make sure your internet connection is active.
+### Notes
 
-The DNOI scoring weights can be adjusted in the app code to fine-tune neighborhood opportunity evaluations.
+- **Raw and processed data are not included** in this repository due to size and privacy considerations. You will need to source or generate these yourself or request access.  
+- The app fetches some data dynamically from **OpenStreetMap** and the **US Census API**. Ensure your internet connection is active.  
+- The **DNOI scoring weights** can be adjusted in the app code to fine-tune neighborhood opportunity evaluations.
