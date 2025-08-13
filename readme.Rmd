@@ -1,45 +1,75 @@
-- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
-Desi Neighborhood Opportunity Index (DNOI) — Richmond, VA
-- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-Interactive R Shiny app to map and score neighborhoods in Richmond based on accessibility to South Asian/Muslim community resources — halal restaurants, desi shopping, cultural events, transit, and affordability.
+---
+title: "Desi (South Asian) Neighborhood Opportunity Index (DNOI) — Richmond, VA"
+---
 
-- - - - - - - - - - - -
-Key Features & Impact
-- - - - - - - - - - - -
-Neighborhood scoring & heatmaps: Evaluates areas based on transit access, affordability, and business density.
+# Desi (South Asian) Neighborhood Opportunity Index (DNOI) — Richmond, VA
 
-Interactive map: Filter by cuisine/business type, toggle neighborhood boundaries, and view DNOI scores.
+An interactive R Shiny app to map and score neighborhoods based on accessibility to South Asian/Muslim community resources — including halal restaurants, desi shopping, cultural events, transit access, and affordability.
 
-Marker clustering & dynamic visualization: Makes large datasets easy to explore.
+---
 
-Data-driven insights: Supports community planning and business decisions.
+## Project Structure
 
-- - - - - - - - - - - - -
-Skills & Technologies
-- - - - - - - - - - - - -
-Languages: R, SQL
+- `app/` — Shiny application code  
+- `etl/` — Data extraction and cleaning scripts  
+- `data/raw/` — Raw datasets (excluded from Git for privacy and size)  
+- `data/processed/` — Cleaned datasets (excluded from Git)  
+- `docs/` — Documentation and project notes  
 
-Packages: Shiny, Leaflet, dplyr, sf, osmdata, tidycensus, shinyWidgets, htmltools
+---
 
-Data Handling: ETL, Census API, OpenStreetMap data, processed large datasets
+## Features
 
-Visualization & UI: Shiny dashboards, interactive maps, heatmaps
+- Interactive map showing halal/desi businesses in the Greater Richmond Area  
+- Neighborhood scoring (DNOI) based on:  
+  - Transit accessibility (bus stops)  
+  - Affordability (median rent and income)  
+  - Business competition (density of similar businesses)  
+- Filtering by cuisine and business type  
+- Toggle for showing neighborhood boundaries and DNOI heatmap  
+- Marker clustering for better visualization  
 
-- - - - - - - - - - - - -
-Project Structure
-- - - - - - - - - - - - -
-app/ — Shiny app code
+---
 
-etl/ — Data extraction & cleaning scripts
+## Getting Started
 
-data/ — Raw & processed datasets (excluded for privacy)
+### Prerequisites
 
-docs/ — Notes & documentation
-- - - - - - - - - - - - - -
-How to Run
-- - - - - - - - - - - - - -
-r
+Make sure you have **R (version 4.0 or above)** and **RStudio** installed.
+
+### Required R Packages
+
+```r
+install.packages(c(
+  "shiny", "leaflet", "dplyr", "sf", "osmdata", 
+  "tidycensus", "shinyWidgets", "here", "htmltools"
+))
+```
+Obtain Your Census API Key
+To fetch US Census data dynamically, you must obtain your own Census API key:
+
+Visit Census API Key Signup
+
+Register and get your API key via email
+
+Activate your key by clicking the activation link in the email
+
+Set your key in R:
+```library(tidycensus)
+census_api_key("YOUR_CENSUS_API_KEY_HERE", install = TRUE)
+```
+
+Running the App
+From your R console or RStudio, run:
+```
 shiny::runApp("app")
-Requires R ≥ 4.0
+```
 
-Census API key needed for dynamic data
+Make sure you are in the root directory of the project, or provide the correct path to the app folder.
+
+Notes
+Raw and processed data are not included in this repository due to size and privacy considerations. You will need to source or generate these yourself or request access.
+
+The app fetches some data dynamically from OpenStreetMap and the US Census API. Make sure your internet connection is active.
+
+The DNOI scoring weights can be adjusted in the app code to fine-tune neighborhood opportunity evaluations.
