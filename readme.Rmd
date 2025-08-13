@@ -37,22 +37,23 @@ Install **R (≥ 4.0)** and **RStudio**.
 
 ### 2️⃣ Install Required Packages
 
-```r
+```bash
 install.packages(c(
   "shiny", "leaflet", "dplyr", "sf", "osmdata",
   "tidycensus", "shinyWidgets", "here", "htmltools"
 ))
+```
 3️⃣ Obtain Census API Key
 Register for a key at Census API Key Signup. Activate the key via email, then set it in R:
 
-```r
+```bash
 library(tidycensus)
 census_api_key("YOUR_CENSUS_API_KEY_HERE", install = TRUE)
 ```
 4️⃣ Run the App
 From RStudio or the R console:
 
-```r
+```bash
 shiny::runApp("app")
 ```
 Make sure you are in the root directory of the project or provide the correct path to the app/ folder.
